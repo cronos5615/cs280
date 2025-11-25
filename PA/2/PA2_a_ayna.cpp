@@ -30,7 +30,6 @@ namespace Parser {
 	}
 
 	static void PushBackToken(LexItem & t) {
-		cout << "pushback " << t.GetLexeme() << endl;
 		if( pushed_back ) {
 			abort();
 		}
@@ -61,7 +60,7 @@ bool check_syntax(LexItem lex,int line, Token expected, Token curBlock){
 		case ELSE:
 			if (expected == lex.GetToken()) return true;
 			if(expected == RBRACES || expected == LBRACES)
-				ParseError(line+1,errors[expected]+"an Else-Clause");
+				ParseError(line-1,errors[expected]+"an Else-Clause");
 			return false;
 		case PRINTLN:
 			if (expected == lex.GetToken()) return true;
@@ -97,6 +96,7 @@ bool Prog(istream& in, int& line){
 			cout << endl << endl;
 			break;
 		}
+		cout << "Done" << endl;
     	
 		return true;
 	}
@@ -137,25 +137,19 @@ bool Stmt(istream& in, int& line){
 	Token tok = lex.GetToken();
 	PushBackToken(lex);
 	if(tok == IF){
-		bool ifs = IfStmt(in,line);
-		if(!ifs)
-			ParseError(line,"Incorrect If-Statement");
-		return ifs;
+		return(IfStmt(in,line));
 	}
 	else if(tok == PRINTLN){
-		bool print = PrintLnStmt(in,line);
-		if(!print)
-			ParseError(line,"Incorrect PrintLn Statement");
-		return false;
+		return PrintLnStmt(in,line);
 	}
 	else if (tok == RBRACES) return false;
 	else{
-		bool assign = AssignStmt(in,line);
-		if(!assign){
-			ParseError(line,"Incorrect Assignment Statement");
-		}
-		return assign;
-	}
+        bool assign = AssignStmt(in,line);
+        if(!assign){
+            ParseError(line,"Incorrect Assignment Statement");
+        }
+        return assign;
+    }
 }
 bool PrintLnStmt(istream& in, int& line){
 	LexItem lex = GetNextToken(in,line);
@@ -171,6 +165,7 @@ bool PrintLnStmt(istream& in, int& line){
 	else{
 		PushBackToken(lex);
 	}
+	ParseError(line,"Incorrect PrintLn Statement");
 	return false;
 
 }
@@ -213,26 +208,28 @@ bool IfStmt(istream& in, int& line){
 	}
 	else
 		PushBackToken(lex);
+	ParseError(line,"Incorrect If-Statement");
 	return false;
 }
 bool AssignStmt(istream& in, int& line){
-	if(Var(in,line)){
-		LexItem v = GetNextToken(in,line);
-		string lexeme = v.GetLexeme();
-		if(AssigOp(in,line)){
-			defVar[lexeme] = true;
-			if(Expr(in,line)){
-				return true;
-			}
-			ParseError(line,"Missing operand for an operator");
-		}
+	if(!Var(in,line)){
+		return false;
+	}
+	LexItem v = GetNextToken(in,line);
+	string lexeme = v.GetLexeme();
+	if(!AssigOp(in,line)){
 		ParseError(line,"Missing Assignment Operator");
 		return false;
-		
 	}
-	ParseError(line,"Missing Expression in Assignment Statement");
-	return false;
+	defVar[lexeme] = true;
+	if(!Expr(in,line)){
+		ParseError(line,"Missing operand for an operator");
+		ParseError(line,"Missing Expression in Assignment Statement");
+		return false;
+	}
+	return true;
 }
+
 bool Var(istream& in, int& line){
 	LexItem lex = GetNextToken(in,line);
 	Token tok = lex.GetToken();
@@ -264,7 +261,7 @@ bool ExprList(istream& in, int& line){
 	
 }
 bool Expr(istream& in, int& line){
-	return(OrExpr(in,line));
+    return OrExpr(in,line);
 }
 bool AssigOp(istream& in, int& line){
 	LexItem lex = GetNextToken(in,line);
@@ -309,12 +306,10 @@ bool RelExpr(istream& in, int& line){
 	if(AddExpr(in,line)){
 		LexItem lex = GetNextToken(in,line);
 		Token tok = lex.GetToken();
-		cout << "relexpr before if " << lex.GetLexeme() << endl;
 		if(tok == SEQ || tok == SGT || tok == SEQ || tok == NLT || tok == NGTE || tok == NEQ){
 			if(AddExpr(in,line))
 				return true;
 		}
-		cout << "relexpr after if " << lex.GetLexeme() << endl;
 		PushBackToken(lex);
 		return true;
 	}
@@ -327,7 +322,6 @@ bool AddExpr(istream& in, int& line){
 		loop = true;
 		lex = GetNextToken(in,line);
 		Token tok = lex.GetToken();
-		cout << "addexpr before if " << lex.GetLexeme() << endl;
 		if(tok == PLUS || tok == MINUS || tok == CAT){
 			if(MultExpr(in,line)){
 				continue;
@@ -336,13 +330,11 @@ bool AddExpr(istream& in, int& line){
 				ParseError(line,"Missing operand after operator");
 				return false;
 			}
-		cout << "addexpr after if " << lex.GetLexeme() << endl;
 		}
 		PushBackToken(lex);
 		break;
 		
 	}
-	cout << "addexpr after while " << lex.GetLexeme() << endl;
 
 	if(!loop)
 		return false;	
@@ -355,17 +347,19 @@ bool MultExpr(istream& in, int& line){
 		loop = true;
 		lex = GetNextToken(in,line);
 		Token tok = lex.GetToken();
-		cout << "multexpr before if " << lex.GetLexeme() << endl;
 		if(tok == MULT || tok == DIV || tok == REM || tok == SREPEAT){
 			if(UnaryExpr(in,line)){
 				continue;
-			}}
-		cout << "multexpr after if " << lex.GetLexeme() << endl;
+			}
+			else {
+				ParseError(line, "Missing operand for an operator");
+				ParseError(line,"Missing operand after operator");
+				return false;
+			}
+		}
 		PushBackToken(lex);
 		break;
 	}
-	cout << "multexpr after while " << lex.GetLexeme() << endl;
-	cout << lex.GetToken() << endl;
 	if(!loop){
 		return false;	
 	}
@@ -388,6 +382,7 @@ bool UnaryExpr(istream& in, int& line){
 	if(ExponExpr(in,line,1)){
 		return true;
 	}
+	
 	return false;
 
 
@@ -405,7 +400,10 @@ bool ExponExpr(istream& in, int& line, int sign){
 				tok = lex.GetToken();
 				continue;
 			}
+			
 			ParseError(line,"Missing exponent operand after exponentiation");
+			ParseError(line, "Missing operand for an operator");
+			
 			return false;
 		}
 		PushBackToken(lex);
@@ -428,19 +426,22 @@ bool PrimaryExpr(istream& in, int& line, int sign){
 		ParseError(line,"Using Undefined Variable: " + lexeme);
 		return false;
 	}
-	if(tok == LPAREN){
+	else if(tok == LPAREN){ 
 		if(Expr(in,line)){
 			lex = GetNextToken(in,line);
 			tok = lex.GetToken();
 			if(tok == RPAREN)
 				return true;
 			ParseError(line,"Missing right Parenthesis after expression");
+            PushBackToken(lex); 
+		}
+		else{
+			ParseError(line,"Missing expression after Left Parenthesis");
+		
 		}
 		return false;
 	}
-	else{
-		return false;
-	}
+
 	PushBackToken(lex);
 	return false;
 	

@@ -6,3 +6,6 @@ y_1 = 'Welcome!' .x. 3;	#string variable
 str$_ = 'Welcome' . ;
 
 r_25 = 50.;
+
+
+ParseError(line,"Missing operand after operator");

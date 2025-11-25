@@ -11,16 +11,3 @@
 11. Line 14: Syntactic error in Program Body
 Unsuccessful Parsing
 Number of Syntax Errors 11
-
-1. Line 14: Missing exponent operand after exponentiation
-2. Line 14: Missing operand for an operator
-3. Line 14: Missing operand after operator
-4. Line 14: Missing expression after Left Parenthesis
-5. Line 14: Missing right Parenthesis after expression
-6. Line 14: Missing expression after Left Parenthesis
-7. Line 14: Missing operand for an operator
-8. Line 14: Missing Assignment Operator
-9. Line 14: Incorrect Assignment Statement
-10. Line 14: Syntactic error in Program Body
-Unsuccessful Parsing
-Number of Syntax Errors 10
