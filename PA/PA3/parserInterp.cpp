@@ -49,7 +49,9 @@ void ParseError(int line, string msg)
 	cout << error_count << ". Line " << line << ": " << msg << endl;
 }
 
+bool consumeFalseIf(istream* in){
 
+}
 //Program is: Prog ::= StmtList
 bool Prog(istream& in, int& line)
 {
@@ -197,13 +199,18 @@ bool PrintLnStmt(istream& in, int& line) {
 		ParseError(line, "Missing Left Parenthesis of PrintLn Statement");
 		return false;
 	}
-	
+	Value temp;
 	bool ex = ExprList(in, line);
-	
 	if( !ex ) {
 		ParseError(line, "Missing expression list after PrintLn");
 		return false;
 	}
+	for(int i = 0; i < ValQue->size(); i++){
+		std::cout << ValQue->front();
+		ValQue->pop();
+	}
+	std::cout << endl;
+	
 	
 	t = Parser::GetNextToken(in, line);
 	if(t != RPAREN ) {
@@ -233,6 +240,7 @@ bool IfStmt(istream& in, int& line) {
 		return false;
 	}
 	
+	
 	t = Parser::GetNextToken(in, line);
 	if(t != RPAREN ) {
 		
@@ -247,13 +255,18 @@ bool IfStmt(istream& in, int& line) {
 		ParseError(line, "Missing left brace for If Statement Clause");
 		return false;
 	}
-	status = StmtList(in, line);
+	if((val || false).GetBool()){
+		status = StmtList(in, line);
+	}
+	else{
+		istream copy = in;
+	}
 	if(!status )
-	{
+		{
 		ParseError(line, "Missing Statement for If Statement Clause");
 		return false;
-	}
-	t = Parser::GetNextToken(in, line);
+		}
+		t = Parser::GetNextToken(in, line);
 	if(t != RBRACES)
 	{
 		ParseError(line, "Missing right brace for If Statement Clause");
@@ -344,7 +357,7 @@ bool AssignStmt(istream& in, int& line) {
 		}
 		else if(t.GetToken() == ERR){
 			ParseError(line, "Unrecognized Input Pattern");
-			cout << "(" << t.GetLexeme() << ")" << endl;
+			std::cout << "(" << t.GetLexeme() << ")" << endl;
 			return false;
 		}
 		else {
@@ -368,7 +381,7 @@ bool ExprList(istream& in, int& line) {
 		ParseError(line, "Missing Expression");
 		return false;
 	}
-	
+	ValQue->push(val);
 	LexItem tok = Parser::GetNextToken(in, line);
 	
 	if (tok == COMMA) {
@@ -378,7 +391,7 @@ bool ExprList(istream& in, int& line) {
 	}
 	else if(tok.GetToken() == ERR){
 		ParseError(line, "Unrecognized Input Pattern");
-		cout << "(" << tok.GetLexeme() << ")" << endl;
+		std::cout << "(" << tok.GetLexeme() << ")" << endl;
 		return false;
 	}
 	else{
@@ -387,10 +400,12 @@ bool ExprList(istream& in, int& line) {
 	}
 	return status;
 }//End of ExprList
-
+bool OrExpr(istream& in, int& line, Value& val){
+	return true;
+}
 //Expr ::= OrExpr ::= AndExpr { || AndExpr }
 bool Expr(istream& in, int& line, Value& val) {
-	
+	Value v1;
 	LexItem tok;
 	bool t1 = AndExpr(in,line, val);
 		
@@ -401,22 +416,22 @@ bool Expr(istream& in, int& line, Value& val) {
 	tok = Parser::GetNextToken(in, line);
 	if(tok.GetToken() == ERR){
 		ParseError(line, "Unrecognized Input Pattern");
-		cout << "(" << tok.GetLexeme() << ")" << endl;
+		std::cout << "(" << tok.GetLexeme() << ")" << endl;
 		return false;
 	}
 	while ( tok == OR  ) 
 	{
-		t1 = AndExpr(in,line, val);
+		t1 = AndExpr(in,line, v1);
 		if( !t1 ) 
 		{
 			ParseError(line, "Missing operand after OR operator");
 			return false;
 		}
-		
+		val = val || v1;
 		tok = Parser::GetNextToken(in, line);
 		if(tok.GetToken() == ERR){
 			ParseError(line, "Unrecognized Input Pattern");
-			cout << "(" << tok.GetLexeme() << ")" << endl;
+			std::cout << "(" << tok.GetLexeme() << ")" << endl;
 			return false;
 		}		
 		
@@ -426,9 +441,9 @@ bool Expr(istream& in, int& line, Value& val) {
 }//End of OrExpr or Expr
 
 //	AndExpr ::= RelExpr  [ && RelExpr ]
-bool AndExpr(istream& in, int& line) {
+bool AndExpr(istream& in, int& line, Value& val) {
 	LexItem tok;
-	Value val;
+	Value v1;
 	bool t1 = RelExpr(in,line, val);
 		
 	if( !t1 ) {
@@ -438,22 +453,22 @@ bool AndExpr(istream& in, int& line) {
 	tok = Parser::GetNextToken(in, line);
 	if(tok.GetToken() == ERR){
 		ParseError(line, "Unrecognized Input Pattern");
-		cout << "(" << tok.GetLexeme() << ")" << endl;
+		std::cout << "(" << tok.GetLexeme() << ")" << endl;
 		return false;
 	}
 	while ( tok == AND  ) 
 	{
-		t1 = RelExpr(in,line, val);
+		t1 = RelExpr(in,line, v1);
 		if( !t1 ) 
 		{
 			ParseError(line, "Missing operand after AND operator");
 			return false;
 		}
-		
+		val = val && v1;
 		tok = Parser::GetNextToken(in, line);
 		if(tok.GetToken() == ERR){
 			ParseError(line, "Unrecognized Input Pattern");
-			cout << "(" << tok.GetLexeme() << ")" << endl;
+			std::cout << "(" << tok.GetLexeme() << ")" << endl;
 			return false;
 		}		
 		
@@ -463,9 +478,9 @@ bool AndExpr(istream& in, int& line) {
 }//End of AndExpr
 
 //RelExpr ::= AddExpr  [ ( @le | @gt | @eq | < | >= | == ) AddExpr ]
-bool RelExpr(istream& in, int& line) {
+bool RelExpr(istream& in, int& line, Value& val) {
 	LexItem tok;
-	Value val;
+	Value v1;
 	bool t1 = AddExpr(in,line, val);
 		
 	if( !t1 ) {
@@ -475,22 +490,40 @@ bool RelExpr(istream& in, int& line) {
 	tok = Parser::GetNextToken(in, line);
 	if(tok.GetToken() == ERR){
 		ParseError(line, "Unrecognized Input Pattern");
-		cout << "(" << tok.GetLexeme() << ")" << endl;
+		std::cout << "(" << tok.GetLexeme() << ")" << endl;
 		return false;
 	}
 	if ( tok == NGTE || tok == NLT || tok == NEQ || tok == SLTE || tok == SGT || tok == SEQ ) 
 	{
-		t1 = AddExpr(in,line, val);
+		t1 = AddExpr(in,line, v1);
 		if( !t1 ) 
 		{
 			ParseError(line, "Missing operand after a relational operator");
 			return false;
 		}
-		
+		if( tok == NGTE){
+			val = val >= v1;
+		}
+		else if( tok == NLT ){
+			val =  val < v1;
+		}
+		else if( tok == NEQ ){
+			val = val == v1;
+		}
+		else if( tok == SLTE ){
+			val = val.SLE(v1);
+		}
+		else if( tok == SGT ){
+			val = val.SGT(v1);
+		}
+		else{
+			val = val.SEQ(v1);
+		}
+
 		tok = Parser::GetNextToken(in, line);
 		if(tok.GetToken() == ERR){
 			ParseError(line, "Unrecognized Input Pattern");
-			cout << "(" << tok.GetLexeme() << ")" << endl;
+			std::cout << "(" << tok.GetLexeme() << ")" << endl;
 			return false;
 		}		
 		
@@ -514,7 +547,7 @@ bool AddExpr(istream& in, int& line, Value& val) {
 	tok = Parser::GetNextToken(in, line);
 	if(tok.GetToken() == ERR){
 		ParseError(line, "Unrecognized Input Pattern");
-		cout << "(" << tok.GetLexeme() << ")" << endl;
+		std::cout << "(" << tok.GetLexeme() << ")" << endl;
 		return false;
 	}
 	while ( tok == PLUS || tok == MINUS || tok == CAT) 
@@ -541,18 +574,17 @@ bool AddExpr(istream& in, int& line, Value& val) {
 		tok = Parser::GetNextToken(in, line);
 		if(tok.GetToken() == ERR){
 			ParseError(line, "Unrecognized Input Pattern");
-			cout << "(" << tok.GetLexeme() << ")" << endl;
+			std::cout << "(" << tok.GetLexeme() << ")" << endl;
 			return false;
 		}		
 		
 	}
 	Parser::PushBackToken(tok);
 	return true;
-}//End of AddExpr
+}
 
-//MultExpr ::= ExponExpr { ( * | / | .x.) ExponExpr }
-bool MultExpr(istream& in, int& line) {
-	Value val;
+bool MultExpr(istream& in, int& line, Value& val) {
+	Value v1;
 	bool t1 = UnaryExpr(in,line, val);
 	LexItem tok;
 	
@@ -563,22 +595,32 @@ bool MultExpr(istream& in, int& line) {
 	tok	= Parser::GetNextToken(in, line);
 	if(tok.GetToken() == ERR){
 			ParseError(line, "Unrecognized Input Pattern");
-			cout << "(" << tok.GetLexeme() << ")" << endl;
+			std::cout << "(" << tok.GetLexeme() << ")" << endl;
 			return false;
 	}
 	while ( tok == MULT || tok == DIV  || tok == SREPEAT)
 	{
-		t1 = UnaryExpr(in,line, val);
+		t1 = UnaryExpr(in,line, v1);
 		
 		if( !t1 ) {
 			ParseError(line, "Missing operand after operator");
 			return false;
 		}
-		
+		if(tok == MULT)
+			val = val * v1;
+		else if(tok == DIV){
+			if(v1.GetBool() == 0){
+				std::cout << "Run-Time Error: Illegal Division by Zero" << endl;
+				ParseError(line,"Illegal operand type or value for the division operation.");
+			}
+			val = val/v1;
+		}
+		else
+			val = val.Repeat(v1);
 		tok	= Parser::GetNextToken(in, line);
 		if(tok.GetToken() == ERR){
 			ParseError(line, "Unrecognized Input Pattern");
-			cout << "(" << tok.GetLexeme() << ")" << endl;
+			std::cout << "(" << tok.GetLexeme() << ")" << endl;
 			return false;
 		}
 		
@@ -588,7 +630,7 @@ bool MultExpr(istream& in, int& line) {
 }//End of MultExpr
 
 //UnaryExpr ::= [( - | + | ! )] ExponExpr 
-bool UnaryExpr(istream& in, int& line)
+bool UnaryExpr(istream& in, int& line, Value& val)
 {
 	LexItem t = Parser::GetNextToken(in, line);
 	bool status;
@@ -608,22 +650,33 @@ bool UnaryExpr(istream& in, int& line)
 	else
 		Parser::PushBackToken(t);
 		
-	status = ExponExpr(in, line, sign);
+	status = ExponExpr(in, line, sign, val);
 	if(!status)
 	{
 		ParseError(line, "Missing operand for an operator");
 		return false;
 	}
 	return status;
+	switch(sign){
+		case -1:
+			val = val * Value(-1.0);
+
+		case 1:
+			//to detect +(string)
+			val = val * Value(1.0);
+		case 2:
+			val = !val;
+	}
 }//End of UnaryExpr
 
 //ExponExpr ::= PrimaryExpr { ** PrimaryExpr }
 //enforcing right associativity using right recursiveness
-bool ExponExpr(istream& in, int& line, int sign)
+bool ExponExpr(istream& in, int& line, int sign, Value& val)
 {
 	bool status;
+	Value v1;
 		
-	status = PrimaryExpr(in, line, sign);
+	status = PrimaryExpr(in, line, sign, val);
 	if( !status ) {
 		return false;
 	}
@@ -631,22 +684,23 @@ bool ExponExpr(istream& in, int& line, int sign)
 	LexItem tok = Parser::GetNextToken(in, line);
 	if (tok == EXPONENT)
 	{
-		status = ExponExpr(in, line, sign);
+		status = ExponExpr(in, line, sign, v1);
 		if( !status ) {
 			ParseError(line, "Missing exponent operand after exponentiation");
 			return false;
 		}
+		val = val.Expon(v1);
 		
 		tok	= Parser::GetNextToken(in, line);
 		if(tok.GetToken() == ERR){
 			ParseError(line, "Unrecognized Input Pattern");
-			cout << "(" << tok.GetLexeme() << ")" << endl;
+			std::cout << "(" << tok.GetLexeme() << ")" << endl;
 			return false;
 		}
 	}
 	else if(tok.GetToken() == ERR){
 			ParseError(line, "Unrecognized Input Pattern");
-			cout << "(" << tok.GetLexeme() << ")" << endl;
+			std::cout << "(" << tok.GetLexeme() << ")" << endl;
 			return false;
 	}
 	Parser::PushBackToken(tok);
@@ -655,8 +709,7 @@ bool ExponExpr(istream& in, int& line, int sign)
 
 
 //PrimaryExpr ::= IDENT | ICONST | FCONST | SCONST | (Expr)
-bool PrimaryExpr(istream& in, int& line, int sign) {
-	Value val;
+bool PrimaryExpr(istream& in, int& line, int sign, Value& val) {
 	LexItem tok = Parser::GetNextToken(in, line);
 	
 	if( tok == IDENT ) {
@@ -669,18 +722,19 @@ bool PrimaryExpr(istream& in, int& line, int sign) {
 			
 			return false;	
 		}
+		val = Value(TempsResults[lexeme]);
 		return true;
 	}
 	else if( tok == ICONST ) {
-		
+		val = tok.GetLexeme();
 		return true;
 	}
 	else if( tok == SCONST ) {
-		
+		val = tok.GetLexeme();
 		return true;
 	}
 	else if( tok == FCONST ) {
-		
+		val = tok.GetLexeme();
 		return true;
 	}
 	else if( tok == LPAREN ) {
@@ -700,7 +754,7 @@ bool PrimaryExpr(istream& in, int& line, int sign) {
 	}
 	else if(tok.GetToken() == ERR){
 		ParseError(line, "Unrecognized Input Pattern");
-		cout << "(" << tok.GetLexeme() << ")" << endl;
+		std::cout << "(" << tok.GetLexeme() << ")" << endl;
 		return false;
 	}
 	
